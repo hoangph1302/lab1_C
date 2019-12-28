@@ -5,8 +5,9 @@
 #include <stdbool.h>
 #include <ctype.h>
 
-//Find all lines of text containing the specified substring
-void findText(char** inputText,int lineInput,char* keyFind ,int cap,bool *result) {
+//Find all lines of text containing or not containing the specified substring
+void findText(char** inputText,int lineInput,char* keyFind ,int find,int notFind,int cap,bool *result) {
+
     int lenFind=strlen(keyFind);
 
     for (int i = 0; i <lineInput ; ++i) {
@@ -29,8 +30,13 @@ void findText(char** inputText,int lineInput,char* keyFind ,int cap,bool *result
                             break;
                     }
                     p2=keyFind;
-                    if (b==lenFind)
-                        result[i]=true;
+                    if (b==lenFind){
+                        if (find==1 && notFind==0)
+                            result[i]=true;
+                        else
+                            result[i]=false;
+                    }
+
                 }
 
                 //do not distinguish between lowercase and capital letters when comparing
@@ -45,8 +51,12 @@ void findText(char** inputText,int lineInput,char* keyFind ,int cap,bool *result
                             break;
                     }
                     p2=keyFind;
-                    if (b==lenFind)
-                        result[i]=true;
+                    if (b==lenFind){
+                        if (find==1 && notFind==0)
+                            result[i]=true;
+                        else
+                            result[i]=false;
+                    }
                 }
             }
             p1++;
@@ -54,60 +64,6 @@ void findText(char** inputText,int lineInput,char* keyFind ,int cap,bool *result
     }
 }
 
-
-//Find all lines of text not containing the specified substring
-void notFindText(char** inputText,int lineInput,int find,char* keyNotFind ,int cap,bool *result){
-    if(find==0){
-        for (int i = 0; i < lineInput ; ++i) {
-            result[i]=true;
-        }
-    }
-
-    int lenFind=strlen(keyNotFind);
-    for (int i = 0; i <lineInput ; ++i) {
-        int lenInput=strlen(inputText[i]);
-        char *p1,*p2,*p3;
-        int b;
-        p1=inputText[i];
-        p2=keyNotFind;
-
-        for (int a = 0; a < lenInput; ++a) {
-            //distinguish between lowercase and capital letters when comparing
-            if(cap==0){
-                if (*p1==*p2){
-                    p3=p1;
-                    for ( b = 0; b <lenFind ; ++b) {
-                        if(*p3==*p2){
-                            p3++;p2++;
-                        }
-                        else
-                            break;
-                    }
-                    p2=keyNotFind;
-                    if (b==lenFind)
-                        result[i]=false;
-                }
-
-                //do not distinguish between lowercase and capital letters when comparing
-            } else{
-                if ( toupper(*p1)==toupper(*p2)){
-                    p3=p1;
-                    for ( b = 0; b <lenFind ; ++b) {
-                        if(toupper(*p3)==toupper(*p2)){
-                            p3++;p2++;
-                        }
-                        else
-                            break;
-                    }
-                    p2=keyNotFind;
-                    if (b==lenFind)
-                        result[i]=false;
-                }
-            }
-            p1++;
-        }
-    }
-}
 
 //sort found rows in descending order of length
 void sortDescending(char** outputText, int lineOutput){
@@ -123,6 +79,7 @@ void sortDescending(char** outputText, int lineOutput){
     }
 }
 
+
 //sort found rows in ascending order of length
 void sortUpAsceding(char** outputText, int lineOutput){
     char* tg;
@@ -136,6 +93,7 @@ void sortUpAsceding(char** outputText, int lineOutput){
         }
     }
 }
+
 
 int getFromFile(char ** inputText,char* pathFile,int *lineInput){
 
@@ -159,7 +117,6 @@ int getFromFile(char ** inputText,char* pathFile,int *lineInput){
 }
 
 
-
 void getFromStind(char** inputText,int* lineInput){
     char* line=(char*) calloc(1000,sizeof(char));
 
@@ -170,22 +127,27 @@ void getFromStind(char** inputText,int* lineInput){
 }
 
 
-void process(char** inputText,int lineInput,char** outputText,int*lineOutput,char* keyFind,char* keyNotFind,int find,
-            int notFind,int sortAsc,int sortDesc,int cap){
+void process(char** inputText,int lineInput,char** outputText,int*lineOutput,char* keyFind,int find,
+             int notFind,int sortAsc,int sortDesc,int cap){
 
     bool result[lineInput];
-    for (int i = 0; i < lineInput ; ++i) {
-        result[i]=false;
-    }
 
     //Find all lines of text containing the specified substring
-    if(find==1){
-        findText(inputText,lineInput,keyFind,cap,result);
+    if(find==1 & notFind==0){
+
+        for (int j = 0; j < lineInput; ++j)
+            result[j] = false;
+
+        findText(inputText,lineInput,keyFind,find,notFind,cap,result);
     }
 
     //Find all lines of text not containing the specified substring
-    if(notFind==1){
-        notFindText(inputText,lineInput,find,keyNotFind,cap,result);
+    if(find==1 && notFind==1){
+
+        for (int i = 0; i <lineInput ; ++i)
+            result[i]=true;
+
+        findText(inputText,lineInput,keyFind,find,notFind,cap,result);
     }
 
     for (int j = 0; j <lineInput ; ++j) {
@@ -197,7 +159,7 @@ void process(char** inputText,int lineInput,char** outputText,int*lineOutput,cha
 
     //sort found rows in descending order of length
     if(sortDesc==1){
-       sortDescending(outputText,*lineOutput);
+        sortDescending(outputText,*lineOutput);
     }
 
     //sort found rows in ascending order of length
@@ -218,10 +180,10 @@ void putsToFile(char** outputText,int lineOut,char* pathFile){
     else{
         for (int i = 0; i <lineOut ; ++i) {
             fputs(outputText[i],fpointer);
-       }
+        }
     }
     fclose(fpointer);
-    printf("Open file %s to watching result!\n",pathFile);
+    printf("Open file '%s' to watching result!\n",pathFile);
 }
 
 
@@ -242,12 +204,11 @@ int main(int argc,char *argv[]){
 
     int option;
     char* keyFind;
-    char* keyNotFind;
     int find,notFind,sortDesc, sortAsc,cap;
-    find=notFind=sortDesc= sortAsc=cap=0;
+    find=notFind=sortDesc=sortAsc=cap=0;
 
     //set up option
-    while((option = getopt(argc, argv,"f:c:adi")) != -1)
+    while((option = getopt(argc, argv,"f:cadi")) != -1)
     {
         switch(option)
         {
@@ -258,7 +219,6 @@ int main(int argc,char *argv[]){
 
             case 'c':
                 notFind=1;
-                keyNotFind =optarg;
                 break;
 
             case 'a':
@@ -281,29 +241,29 @@ int main(int argc,char *argv[]){
     }
 
     //check option
-    if(find==0 && notFind==0){
-        printf("Please enter option -f/-c!\n");
+    if(find==0 ){
+        printf("Please enter option -f\n");
         return 0;
     }
 
-   if(sortAsc==1 && sortDesc==1){
-       printf("ERROR: sort (-a and -d) \n");
-       return 0;
-   }
+    if(sortAsc==1 && sortDesc==1){
+        printf("ERROR: sort (-a and -d) \n");
+        return 0;
+    }
 
     switch (argc-optind){
         case 0: // using standard input and output
             getFromStind(inputText,&lineInput);
-            process(inputText,lineInput,outputText,&lineOutput,keyFind,keyNotFind,find,notFind,sortAsc,sortDesc,cap);
+            process(inputText,lineInput,outputText,&lineOutput,keyFind,find,notFind,sortAsc,sortDesc,cap);
             printf("Result find:\n");
             for (int i = 0; i <lineOutput; ++i) {
-               printf("%s",outputText[i]);
+                printf("%s",outputText[i]);
             }
             break;
 
         case 1:// get input from file and using standard output
             getFromFile(inputText,argv[optind],&lineInput);
-            process(inputText,lineInput,outputText,&lineOutput,keyFind,keyNotFind,find,notFind,sortAsc,sortDesc,cap);
+            process(inputText,lineInput,outputText,&lineOutput,keyFind,find,notFind,sortAsc,sortDesc,cap);
             printf("Result find:\n");
             for (int i = 0; i <lineOutput; ++i) {
                 printf("%s",outputText[i]);
@@ -312,7 +272,7 @@ int main(int argc,char *argv[]){
 
         case 2 :// get input from file, and put output to file
             getFromFile(inputText,argv[optind],&lineInput);
-            process(inputText,lineInput,outputText,&lineOutput,keyFind,keyNotFind,find,notFind,sortAsc,sortDesc,cap);
+            process(inputText,lineInput,outputText,&lineOutput,keyFind,find,notFind,sortAsc,sortDesc,cap);
             putsToFile(outputText,lineOutput,argv[++optind]);
             break;
 
